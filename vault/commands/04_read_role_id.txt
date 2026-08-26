@@ -1,0 +1,1 @@
+vault read -field=role_id auth/approle/role/order-tracker-service-role/role-id

@@ -1,0 +1,45 @@
+spring:
+  application:
+    name: order-tracker-service
+  config:
+    import: vault://
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  cloud:
+    vault:
+      uri: ${VAULT_URI:http://localhost:8200}
+      authentication: approle
+      fail-fast: true
+      app-role:
+        role-id: ${VAULT_ROLE_ID}
+        secret-id: ${VAULT_SECRET_ID}
+      kv:
+        enabled: true
+        backend: secret
+        backend-version: 2
+        application-name: order-tracker-service
+        default-context: ""
+        profile-separator: /
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration: ${JWT_EXPIRATION_MS}
+  webhook:
+    secret: ${WEBHOOK_SECRET}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS}
+    allow-credentials: ${CORS_ALLOW_CREDENTIALS}
+    allowed-methods: ${CORS_ALLOWED_METHODS}
+    allowed-headers: ${CORS_ALLOWED_HEADERS}
+    max-age: ${CORS_MAX_AGE}
+
+server:
+  port: ${APP_PORT}
+  shutdown: ${SERVER_SHUTDOWN}
+
+springdoc:
+  api-docs:
+    path: ${SPRINGDOC_API_DOCS_PATH}
+  swagger-ui:
+    path: ${SPRINGDOC_SWAGGER_UI_PATH}

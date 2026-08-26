@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <property name="HUMAN_LOG_PATTERN"
+              value="%green(%d{HH:mm:ss.SSS}) %blue(%-5level) %red([%thread]) %yellow(%logger{15}) - %magenta([traceId=%X{traceId} spanId=%X{spanId}]) - %cyan(%msg%n)"/>
+
+    <springProfile name="dev">
+        <springProperty scope="context" name="DEV_LOG_FILE"
+                        source="logging.file.name" defaultValue="logs/order-tracker-dev.log"/>
+
+        <appender name="DEV_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <charset>UTF-8</charset>
+                <pattern>${HUMAN_LOG_PATTERN}</pattern>
+            </encoder>
+        </appender>
+
+        <appender name="DEV_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>${DEV_LOG_FILE}</file>
+            <encoder>
+                <charset>UTF-8</charset>
+                <pattern>${HUMAN_LOG_PATTERN}</pattern>
+            </encoder>
+            <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+                <fileNamePattern>${DEV_LOG_FILE}.%d{yyyy-MM-dd}.%i.gz</fileNamePattern>
+                <maxFileSize>10MB</maxFileSize>
+                <maxHistory>7</maxHistory>
+                <totalSizeCap>100MB</totalSizeCap>
+                <cleanHistoryOnStart>false</cleanHistoryOnStart>
+            </rollingPolicy>
+        </appender>
+
+        <logger name="com.codems.ordertracker" level="DEBUG"/>
+        <logger name="org.springframework.web" level="INFO"/>
+        <logger name="org.springframework.security" level="INFO"/>
+        <logger name="org.hibernate.SQL" level="DEBUG"/>
+        <logger name="org.hibernate.orm.jdbc.bind" level="TRACE"/>
+        <logger name="org.flywaydb" level="INFO"/>
+
+        <root level="INFO">
+            <appender-ref ref="DEV_CONSOLE"/>
+            <appender-ref ref="DEV_FILE"/>
+        </root>
+    </springProfile>
+
+    <springProfile name="prod">
+        <springProperty scope="context" name="PROD_LOG_FILE"
+                        source="logging.file.name" defaultValue="logs/order-tracker-prod.json"/>
+
+        <appender name="PROD_JSON_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+                <level>WARN</level>
+            </filter>
+            <file>${PROD_LOG_FILE}</file>
+            <encoder class="org.springframework.boot.logging.logback.StructuredLogEncoder">
+                <format>logstash</format>
+                <charset>UTF-8</charset>
+            </encoder>
+            <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+                <fileNamePattern>${PROD_LOG_FILE}.%d{yyyy-MM-dd}.%i.gz</fileNamePattern>
+                <maxFileSize>10MB</maxFileSize>
+                <maxHistory>30</maxHistory>
+                <totalSizeCap>1GB</totalSizeCap>
+                <cleanHistoryOnStart>false</cleanHistoryOnStart>
+            </rollingPolicy>
+        </appender>
+
+        <root level="WARN">
+            <appender-ref ref="PROD_JSON_FILE"/>
+        </root>
+    </springProfile>
+</configuration>
