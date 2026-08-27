@@ -2,6 +2,7 @@ package com.codems.ordertracker;
 
 import com.codems.ordertracker.common.config.properties.CorsConfigProperties;
 import com.codems.ordertracker.common.config.properties.JwtProperties;
+import com.codems.ordertracker.common.config.properties.MailProperties;
 import com.codems.ordertracker.common.config.properties.WebhookProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -13,6 +14,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 @EnableConfigurationProperties({
         CorsConfigProperties.class,
         JwtProperties.class,
+        MailProperties.class,
         WebhookProperties.class
 })
 public class OrderTrackerApplication {
