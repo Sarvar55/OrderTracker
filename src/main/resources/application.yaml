@@ -1,6 +1,18 @@
 spring:
   application:
     name: order-tracker-service
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_SMTP_AUTH:false}
+          starttls:
+            enable: ${MAIL_SMTP_STARTTLS_ENABLE:false}
+    test-connection: ${MAIL_TEST_CONNECTION:false}
   config:
     import: vault://
   profiles:
@@ -22,6 +34,9 @@ spring:
         profile-separator: /
 
 app:
+  mail:
+    from-address: ${MAIL_FROM_ADDRESS:no-reply@ordertracker.local}
+    from-name: ${MAIL_FROM_NAME:Order Tracker}
   jwt:
     secret: ${JWT_SECRET}
     expiration: ${JWT_EXPIRATION_MS}
