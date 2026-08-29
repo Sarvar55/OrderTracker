@@ -3,6 +3,8 @@ package com.codems.ordertracker.domain.order.entity;
 import com.codems.ordertracker.domain.base.BaseEntity;
 import com.codems.ordertracker.domain.base.HibernateFilters;
 import com.codems.ordertracker.domain.base.RecordStatus;
+import com.codems.ordertracker.domain.base.event.DomainEvent;
+import com.codems.ordertracker.domain.order.event.OrderStatusChangedEvent;
 import com.codems.ordertracker.domain.user.entity.User;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -18,9 +20,11 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import lombok.AccessLevel;
 import lombok.EqualsAndHashCode;
@@ -30,6 +34,8 @@ import lombok.Setter;
 import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.SQLDelete;
+import org.springframework.data.domain.AfterDomainEventPublication;
+import org.springframework.data.domain.DomainEvents;
 
 @Getter
 @Setter
@@ -66,11 +72,9 @@ public class Order extends BaseEntity {
 	@Column(name = "shipping_address", nullable = false, length = 500)
 	private String shippingAddress;
 
-	/** Reference issued by the payment gateway, filled in by the payment webhook. */
 	@Column(name = "payment_reference", length = 100)
 	private String paymentReference;
 
-	/** Carrier tracking number, filled in by the shipment webhook. */
 	@Column(name = "tracking_number", length = 100)
 	private String trackingNumber;
 
@@ -89,6 +93,9 @@ public class Order extends BaseEntity {
 
 	@Column(name = "deleted_at")
 	private LocalDateTime deletedAt;
+
+	@Transient
+	private final List<DomainEvent> domainEvents = new ArrayList<>();
 
 	public static Order of(User customer, String orderNumber, String currency, String shippingAddress) {
 		Order order = new Order();
@@ -116,14 +123,36 @@ public class Order extends BaseEntity {
 				.reduce(BigDecimal.ZERO, BigDecimal::add);
 	}
 
-	/**
-	 * Applies a status change and appends it to the audit trail.
-	 * Callers are responsible for validating the transition first.
-	 */
 	public void changeStatus(OrderStatus target, String reason, String source) {
 		OrderStatus previous = orderStatus;
 		orderStatus = target;
 		statusHistory.add(OrderStatusHistory.of(this, previous, target, reason, source));
+
+		if (previous != target) {
+			registerDomainEvent(new OrderStatusChangedEvent(
+					id,
+					orderNumber,
+					customer.getEmail(),
+					previous,
+					target,
+					reason,
+					source == null ? OrderStatusHistory.SOURCE_SYSTEM : source
+			));
+		}
+	}
+
+	@DomainEvents
+	public Collection<DomainEvent> domainEvents() {
+		return List.copyOf(domainEvents);
+	}
+
+	@AfterDomainEventPublication
+	public void clearDomainEvents() {
+		domainEvents.clear();
+	}
+
+	private void registerDomainEvent(DomainEvent event) {
+		domainEvents.add(event);
 	}
 
 	public boolean isOwnedBy(Long userId) {
