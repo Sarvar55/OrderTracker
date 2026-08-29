@@ -11,7 +11,6 @@ public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecific
 
     Optional<Order> findByOrderNumber(String orderNumber);
 
-    /** Used by the payment webhook to resolve the order a gateway event belongs to. */
     Optional<Order> findByPaymentReference(String paymentReference);
 
     Optional<Order> findByIdAndCustomerId(Long id, Long customerId);

@@ -18,10 +18,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/**
- * Audit trail of every status change an order went through, including the
- * source that triggered it (a customer action or an external webhook).
- */
 @Getter
 @Setter
 @Entity
@@ -53,7 +49,6 @@ public class OrderStatusHistory extends BaseEntity {
 	@Column(length = 500)
 	private String reason;
 
-	/** CUSTOMER, SYSTEM, or the webhook provider that triggered the change. */
 	@Column(nullable = false, length = 50)
 	private String source;
 

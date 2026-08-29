@@ -4,10 +4,6 @@ import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * Lifecycle of an order. Transitions are driven either by the customer
- * (cancelling) or by incoming payment/shipment webhook events.
- */
 public enum OrderStatus {
 
 	PENDING_PAYMENT,

@@ -7,10 +7,6 @@ import java.time.format.DateTimeFormatter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-/**
- * Produces the human readable order number exposed to customers and to
- * external systems, e.g. {@code ORD-20260827-4F2A9C31}.
- */
 @Component
 @RequiredArgsConstructor
 public class OrderNumberGenerator {
