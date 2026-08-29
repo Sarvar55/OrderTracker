@@ -10,6 +10,7 @@ import com.codems.ordertracker.domain.order.dto.OrderStatusHistoryResponse;
 import com.codems.ordertracker.domain.order.dto.OrderSummaryResponse;
 import com.codems.ordertracker.domain.order.dto.UpdateOrderRequest;
 import com.codems.ordertracker.domain.order.entity.OrderStatus;
+import com.codems.ordertracker.domain.order.service.OrderExportService;
 import com.codems.ordertracker.domain.order.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -23,7 +24,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -43,6 +46,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class OrderController {
 
     private final OrderService orderService;
+    private final OrderExportService orderExportService;
 
     @PostMapping(version = ApplicationConstants.DEFAULT_API_VERSION)
     @Operation(
@@ -141,5 +145,30 @@ public class OrderController {
     public ResponseEntity<BaseResponse<Void>> delete(@PathVariable Long id) {
         orderService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping(value = "/export", version = ApplicationConstants.DEFAULT_API_VERSION)
+    @Operation(
+            summary = "Export my orders as CSV",
+            description = "Streams the authenticated customer's orders, optionally filtered by status and date "
+                    + "range, as a downloadable CSV file."
+    )
+    public ResponseEntity<byte[]> exportMyOrders(
+            @Parameter(description = "Filter by order status")
+            @RequestParam(required = false) OrderStatus status,
+
+            @Parameter(description = "Only orders created at or after this timestamp")
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
+
+            @Parameter(description = "Only orders created at or before this timestamp")
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to
+    ) {
+        byte[] csv = orderExportService.exportMyOrdersAsCsv(status, from, to);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"orders.csv\"")
+                .contentType(MediaType.parseMediaType("text/csv"))
+                .body(csv);
     }
 }
