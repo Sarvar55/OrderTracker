@@ -6,6 +6,7 @@ import java.util.List;
 import lombok.Getter;
 import org.springframework.security.core.CredentialsContainer;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 @Getter
@@ -26,7 +27,7 @@ public final class SecurityUser implements UserDetails, CredentialsContainer {
         this.password = user.getPassword();
         this.enabled = user.isEnabled();
         this.accountNonLocked = user.isAccountNonLocked();
-        this.authorities = List.of();
+        this.authorities = List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
     }
 
     public static SecurityUser from(User user) {
