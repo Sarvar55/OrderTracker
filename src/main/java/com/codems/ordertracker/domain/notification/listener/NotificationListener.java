@@ -1,7 +1,7 @@
 package com.codems.ordertracker.domain.notification.listener;
 
-import com.codems.ordertracker.domain.notification.event.OrderStatusChangedEvent;
 import com.codems.ordertracker.domain.notification.service.MailService;
+import com.codems.ordertracker.domain.order.event.OrderStatusChangedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;

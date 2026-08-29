@@ -1,7 +1,7 @@
 package com.codems.ordertracker.domain.notification.service;
 
 import com.codems.ordertracker.common.config.properties.MailProperties;
-import com.codems.ordertracker.domain.notification.event.OrderStatusChangedEvent;
+import com.codems.ordertracker.domain.order.event.OrderStatusChangedEvent;
 import jakarta.mail.MessagingException;
 import java.io.UnsupportedEncodingException;
 import lombok.RequiredArgsConstructor;
