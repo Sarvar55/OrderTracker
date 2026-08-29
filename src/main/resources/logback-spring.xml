@@ -3,7 +3,7 @@
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
 
     <property name="HUMAN_LOG_PATTERN"
-              value="%green(%d{HH:mm:ss.SSS}) %blue(%-5level) %red([%thread]) %yellow(%logger{15}) - %magenta([traceId=%X{traceId} spanId=%X{spanId}]) - %cyan(%msg%n)"/>
+              value="%green(%d{HH:mm:ss.SSS}) %blue(%-5level) %red([%thread]) %yellow(%logger{15}) - %cyan(%msg%n)"/>
 
     <springProfile name="dev">
         <springProperty scope="context" name="DEV_LOG_FILE"
