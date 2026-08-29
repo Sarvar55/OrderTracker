@@ -59,6 +59,10 @@ public class User extends BaseEntity {
 
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, length = 30)
+	private Role role = Role.CUSTOMER;
+
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false, length = 30)
 	private RecordStatus status = RecordStatus.ACTIVE;
 
 	@Column(name = "deleted_at")
