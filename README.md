@@ -169,10 +169,73 @@ curl -H "Authorization: Bearer $ADMIN_JWT" \
 Returns everything in the list view plus the full `payload` as received, for troubleshooting a
 specific event.
 
-> **Note:** This is a generic HMAC-signed webhook receiver, not a Stripe integration. It does not
-> verify Stripe's `Stripe-Signature` header format or accept Stripe's event schema. The Stripe CLI
-> can still be used to forward raw HTTP traffic during local testing, but its default signing
-> scheme and payload shape are incompatible with the verifier above — use the `curl` example instead.
+## Additional Features
+
+### Email notification retry
+
+Order-status-change emails are sent asynchronously and automatically retried on transient
+failures (e.g. SMTP timeouts), using Spring Retry with exponential backoff.
+
+- Up to **3 attempts**, starting at a 2s delay and doubling each retry (2s → 4s → 8s)
+- Retries only trigger on `MailException` (transient send failures), not on message-construction
+  errors
+- If all attempts fail, the failure is logged (not silently dropped) rather than retried
+  indefinitely — no separate dead-letter queue is used
+
+No new endpoint is exposed for this; it's an internal reliability improvement to the existing
+async mail flow triggered by order status changes (including webhook-driven ones).
+
+### Order history export (CSV)
+
+| Method | Path | Description |
+| --- | --- | --- |
+| `GET` | `/api/orders/export` | Export the authenticated customer's own orders as a CSV file |
+
+Requires a JWT (same auth as the rest of the Order API). Filterable and downloads as an
+`attachment; filename="orders.csv"`.
+
+| Param | Type | Description |
+| --- | --- | --- |
+| `status` | `OrderStatus` | Optional — restrict to one order status |
+| `from` | ISO-8601 date-time | Optional — only orders created at or after this timestamp |
+| `to` | ISO-8601 date-time | Optional — only orders created at or before this timestamp |
+
+```bash
+curl -H "Authorization: Bearer $JWT" \
+  "http://localhost:8082/api/orders/export?status=DELIVERED&from=2026-08-01T00:00:00" \
+  -o orders.csv
+```
+
+Exported columns: `Order Number, Status, Total Amount, Currency, Items, Payment Reference,
+Tracking Number, Created At, Updated At`.
+
+> **Note:** Only CSV export is currently implemented. Excel (`.xlsx`) export is not yet available.
+
+### Admin dashboard statistics
+
+| Method | Path | Description |
+| --- | --- | --- |
+| `GET` | `/api/admin/dashboard/stats` | Aggregated order and webhook statistics |
+
+Requires a JWT with the `ADMIN` role.
+
+```bash
+curl -H "Authorization: Bearer $ADMIN_JWT" http://localhost:8082/api/admin/dashboard/stats
+```
+
+Response shape:
+
+```json
+{
+  "totalOrders": 128,
+  "ordersByStatus": { "PENDING_PAYMENT": 12, "PAID": 40, "SHIPPED": 30, "DELIVERED": 46 },
+  "totalWebhookEvents": 96,
+  "webhookEventsByStatus": { "PROCESSED": 90, "FAILED": 6 },
+  "webhookSuccessRate": 0.9375
+}
+```
+
+`webhookSuccessRate` is `PROCESSED` events divided by total webhook events received.
 
 ## Start infrastructure
 
