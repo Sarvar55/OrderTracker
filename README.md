@@ -58,6 +58,122 @@ The webhook handlers do not touch orders directly; they call `OrderService`:
 resolving the order an external event belongs to. Each of these methods returns the updated
 `Order`, so the notification module can send the customer email from the returned state.
 
+## Webhook API
+
+External payment and shipment providers notify OrderTracker of status changes by posting signed
+events to these endpoints. Requests are **not** authenticated with a JWT — instead, each request
+must carry a valid HMAC-SHA256 signature computed over the raw request body.
+
+| Method | Path | Description |
+| --- | --- | --- |
+| `POST` | `/api/webhooks/payment` | Payment gateway status update (`payment.succeeded`, `payment.failed`) |
+| `POST` | `/api/webhooks/shipment` | Shipping provider status update (`shipment.shipped`, `shipment.delivered`) |
+
+### Signature verification
+
+Every request must include an `X-Webhook-Signature` header in the form:
+
+```
+X-Webhook-Signature: sha256=<hex-encoded HMAC-SHA256 of the raw body>
+```
+
+The HMAC key is `WEBHOOK_SECRET`, the same value configured in Vault (see
+[Start infrastructure](#start-infrastructure)). Requests with a missing, malformed, or
+mismatched signature are rejected before the payload is parsed.
+
+To compute a valid signature locally:
+
+```bash
+BODY='{"eventId":"evt_001","eventType":"payment.succeeded","orderNumber":"ORD-20260827-4F2A9C31","paymentReference":"pi_3QkL2mF9x","amount":358.80}'
+SIG=$(echo -n "$BODY" | openssl dgst -sha256 -hmac "$WEBHOOK_SECRET" | sed 's/^.* //')
+
+curl -X POST http://localhost:8082/api/webhooks/payment \
+  -H "Content-Type: application/json" \
+  -H "X-Webhook-Signature: sha256=$SIG" \
+  -d "$BODY"
+```
+
+### Payment webhook payload
+
+```json
+{
+  "eventId": "evt_1PxK2mF9x0002",
+  "eventType": "payment.succeeded",
+  "orderNumber": "ORD-20260827-4F2A9C31",
+  "paymentReference": "pi_3QkL2mF9x",
+  "amount": 358.80,
+  "failureReason": null
+}
+```
+
+`eventType` must be `payment.succeeded` or `payment.failed`. `failureReason` is only relevant
+for failed payments.
+
+### Shipment webhook payload
+
+```json
+{
+  "eventId": "evt_2QyM3nG0y0003",
+  "eventType": "shipment.shipped",
+  "orderNumber": "ORD-20260827-4F2A9C31",
+  "trackingNumber": "1Z999AA10123456784"
+}
+```
+
+`eventType` must be `shipment.shipped` or `shipment.delivered`.
+
+### Idempotency and logging
+
+Every incoming request is persisted as a `WebhookEvent` (payload, signature validity, resulting
+status, timestamp) before it is processed. Events are de-duplicated by `eventId` per channel, so
+a provider retrying the same event will not double-apply an order status change.
+
+### Webhook log API (admin)
+
+Every received webhook event is queryable through an admin-only audit API, backed by the same
+`WebhookEvent` records described above.
+
+| Method | Path | Description |
+| --- | --- | --- |
+| `GET` | `/api/webhooks/logs` | Paginated, filterable list of webhook events |
+| `GET` | `/api/webhooks/logs/{id}` | Full detail of a single event, including the raw payload |
+
+Both endpoints require a JWT with the `ADMIN` role.
+
+#### List filters (`GET /api/webhooks/logs`)
+
+| Param | Type | Description |
+| --- | --- | --- |
+| `channel` | `PAYMENT` \| `SHIPMENT` | Restrict to one webhook source |
+| `status` | `RECEIVED` \| `PROCESSED` \| `FAILED` \| `IGNORED` | Restrict to one processing outcome |
+| `from` | ISO-8601 date-time | Only events received at or after this timestamp |
+| `to` | ISO-8601 date-time | Only events received at or before this timestamp |
+| `page`, `size`, `sort` | standard Spring `Pageable` | Defaults to `size=20`, sorted by `createdAt` descending |
+
+```bash
+curl -H "Authorization: Bearer $ADMIN_JWT" \
+  "http://localhost:8082/api/webhooks/logs?channel=PAYMENT&status=FAILED&from=2026-08-01T00:00:00"
+```
+
+Response entries include `channel`, `eventType`, `providerEventId`, `orderNumber`,
+`signatureValid`, `status`, `errorMessage`, `receivedAt`, and `processedAt` — but not the raw
+payload, to keep list responses compact.
+
+#### Event detail (`GET /api/webhooks/logs/{id}`)
+
+```bash
+curl -H "Authorization: Bearer $ADMIN_JWT" \
+  http://localhost:8082/api/webhooks/logs/42
+```
+
+Returns everything in the list view plus the full `payload` as received, for troubleshooting a
+specific event.
+
+> **Note:** This is a generic HMAC-signed webhook receiver, not a Stripe integration. It does not
+> verify Stripe's `Stripe-Signature` header format or accept Stripe's event schema. The Stripe CLI
+> can still be used to forward raw HTTP traffic during local testing, but its default signing
+> scheme and payload shape are incompatible with the verifier above — use the `curl` example instead.
+
 ## Start infrastructure
 
 Edit `.env`, then start PostgreSQL and Vault:
