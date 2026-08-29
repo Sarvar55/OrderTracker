@@ -14,6 +14,8 @@ public class SecurityPaths {
         return List.of(
                 "/api/auth/register",
                 "/api/auth/login",
+                "/api/webhooks/payment",
+                "/api/webhooks/shipment",
                 "/swagger-ui/**",
                 "/v3/api-docs/**",
                 "/swagger-ui.html"
