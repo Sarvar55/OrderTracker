@@ -130,9 +130,10 @@ public class OrderService {
                 reason == null || reason.isBlank() ? "Cancelled by customer" : reason,
                 OrderStatusHistory.SOURCE_CUSTOMER
         );
+        Order saved = orderRepository.save(order);
         log.info("Order {} cancelled by user {}", order.getOrderNumber(), currentUserId());
 
-        return orderMapper.toResponse(order);
+        return orderMapper.toResponse(saved);
     }
 
     @Transactional
@@ -146,17 +147,6 @@ public class OrderService {
         log.info("Order {} soft deleted by user {}", order.getOrderNumber(), currentUserId());
     }
 
-    /**
-     * Applies a status change coming from outside the customer flow, e.g. from
-     * the payment or shipment webhook handlers. Validates the transition, keeps
-     * the audit trail up to date and returns the updated order so the caller can
-     * trigger notifications.
-     *
-     * @param orderNumber business identifier carried by the external event
-     * @param target      status the external system reported
-     * @param reason      human readable explanation stored in the audit trail
-     * @param source      who triggered the change, e.g. {@code PAYMENT_WEBHOOK}
-     */
     @Transactional
     public Order applyExternalStatusChange(
             String orderNumber,
@@ -169,7 +159,6 @@ public class OrderService {
         return applyStatusChange(order, target, reason, source);
     }
 
-    /** Same as {@link #applyExternalStatusChange}, for callers that already loaded the order. */
     @Transactional
     public Order applyStatusChange(Order order, OrderStatus target, String reason, String source) {
         OrderStatus current = order.getOrderStatus();
@@ -182,12 +171,11 @@ public class OrderService {
         }
 
         order.changeStatus(target, reason, source);
-        log.info("Order {} moved from {} to {} by {}", order.getOrderNumber(), current, target, source);
+        log.debug("Order {} moved from {} to {} by {}", order.getOrderNumber(), current, target, source);
 
-        return order;
+        return orderRepository.save(order);
     }
 
-    /** Stores the gateway reference so later payment events can resolve the order. */
     @Transactional
     public Order attachPaymentReference(String orderNumber, String paymentReference) {
         Order order = orderRepository.findByOrderNumber(orderNumber)
@@ -196,7 +184,6 @@ public class OrderService {
         return order;
     }
 
-    /** Stores the carrier tracking number reported by the shipment webhook. */
     @Transactional
     public Order attachTrackingNumber(String orderNumber, String trackingNumber) {
         Order order = orderRepository.findByOrderNumber(orderNumber)
