@@ -5,11 +5,17 @@ import com.codems.ordertracker.domain.order.event.OrderStatusChangedEvent;
 import jakarta.mail.MessagingException;
 import java.io.UnsupportedEncodingException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Recover;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MailService {
@@ -18,6 +24,11 @@ public class MailService {
     private final MailProperties mailProperties;
 
     @Async("mailTaskExecutor")
+    @Retryable(
+            retryFor = MailException.class,
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 2000, multiplier = 2)
+    )
     public void sendOrderStatusChangedEmail(OrderStatusChangedEvent event) {
         try {
             var message = mailSender.createMimeMessage();
@@ -32,6 +43,14 @@ public class MailService {
         } catch (MessagingException | UnsupportedEncodingException exception) {
             throw new IllegalStateException("Could not create order status email", exception);
         }
+    }
+
+    @Recover
+    public void recoverFromFailedSend(MailException exception, OrderStatusChangedEvent event) {
+        log.error(
+                "Giving up sending status email for order {} to {} after repeated transient failures",
+                event.orderNumber(), event.customerEmail(), exception
+        );
     }
 
     private String buildBody(OrderStatusChangedEvent event) {
