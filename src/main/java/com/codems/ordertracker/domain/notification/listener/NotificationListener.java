@@ -3,7 +3,7 @@ package com.codems.ordertracker.domain.notification.listener;
 import com.codems.ordertracker.domain.notification.service.MailService;
 import com.codems.ordertracker.domain.order.event.OrderStatusChangedEvent;
 import lombok.RequiredArgsConstructor;
-import org.springframework.scheduling.annotation.Async;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -14,7 +14,6 @@ public class NotificationListener {
 
     private final MailService mailService;
 
-    @Async("mailTaskExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onOrderStatusChanged(OrderStatusChangedEvent event) {
         mailService.sendOrderStatusChangedEmail(event);
