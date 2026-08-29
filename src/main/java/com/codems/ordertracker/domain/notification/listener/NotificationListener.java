@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class NotificationListener {
@@ -16,6 +17,15 @@ public class NotificationListener {
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onOrderStatusChanged(OrderStatusChangedEvent event) {
+        log.info(
+                "Order status changed eventId={} orderId={} orderNumber={} previousStatus={} currentStatus={} source={}",
+                event.eventId(),
+                event.orderId(),
+                event.orderNumber(),
+                event.previousStatus(),
+                event.currentStatus(),
+                event.source()
+        );
         mailService.sendOrderStatusChangedEmail(event);
     }
 }
