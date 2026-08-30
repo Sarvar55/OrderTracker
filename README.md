@@ -16,6 +16,22 @@ OrderTracker is a Spring Boot backend foundation for e-commerce order management
 
 Webhook, webhook log, and mail notification domain implementations are intentionally not included yet.
 
+## Authorization model
+
+Access is decided by the URL layout in `SecurityPaths`, applied by the filter chain in
+`SecurityConfig`:
+
+| Rule | Paths | Access |
+| --- | --- | --- |
+| `publicPaths` | `/api/auth/**`, `/api/webhooks/payment`, `/api/webhooks/shipment`, Swagger | No token |
+| `adminPaths` | `/api/admin/**` | JWT with the `ADMIN` role |
+| everything else | e.g. `/api/orders/**` | Any authenticated user |
+
+Every admin endpoint therefore lives under `/api/admin`, which is why the webhook log API is
+mounted at `/api/admin/webhooks/logs`. A new admin endpoint under that prefix is protected as
+soon as it is added, with no change to the security configuration and no `@PreAuthorize` on the
+controller.
+
 ## Order API
 
 All endpoints require a JWT access token and operate on the orders of the authenticated customer.
