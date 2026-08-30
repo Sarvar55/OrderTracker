@@ -16,6 +16,22 @@ OrderTracker is a Spring Boot backend foundation for e-commerce order management
 
 Webhook, webhook log, and mail notification domain implementations are intentionally not included yet.
 
+## Authorization model
+
+Access is decided by the URL layout in `SecurityPaths`, applied by the filter chain in
+`SecurityConfig`:
+
+| Rule | Paths | Access |
+| --- | --- | --- |
+| `publicPaths` | `/api/auth/**`, `/api/webhooks/payment`, `/api/webhooks/shipment`, Swagger | No token |
+| `adminPaths` | `/api/admin/**` | JWT with the `ADMIN` role |
+| everything else | e.g. `/api/orders/**` | Any authenticated user |
+
+Every admin endpoint therefore lives under `/api/admin`, which is why the webhook log API is
+mounted at `/api/admin/webhooks/logs`. A new admin endpoint under that prefix is protected as
+soon as it is added, with no change to the security configuration and no `@PreAuthorize` on the
+controller.
+
 ## Order API
 
 All endpoints require a JWT access token and operate on the orders of the authenticated customer.
@@ -135,12 +151,12 @@ Every received webhook event is queryable through an admin-only audit API, backe
 
 | Method | Path | Description |
 | --- | --- | --- |
-| `GET` | `/api/webhooks/logs` | Paginated, filterable list of webhook events |
-| `GET` | `/api/webhooks/logs/{id}` | Full detail of a single event, including the raw payload |
+| `GET` | `/api/admin/webhooks/logs` | Paginated, filterable list of webhook events |
+| `GET` | `/api/admin/webhooks/logs/{id}` | Full detail of a single event, including the raw payload |
 
 Both endpoints require a JWT with the `ADMIN` role.
 
-#### List filters (`GET /api/webhooks/logs`)
+#### List filters (`GET /api/admin/webhooks/logs`)
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -152,18 +168,18 @@ Both endpoints require a JWT with the `ADMIN` role.
 
 ```bash
 curl -H "Authorization: Bearer $ADMIN_JWT" \
-  "http://localhost:8082/api/webhooks/logs?channel=PAYMENT&status=FAILED&from=2026-08-01T00:00:00"
+  "http://localhost:8082/api/admin/webhooks/logs?channel=PAYMENT&status=FAILED&from=2026-08-01T00:00:00"
 ```
 
 Response entries include `channel`, `eventType`, `providerEventId`, `orderNumber`,
 `signatureValid`, `status`, `errorMessage`, `receivedAt`, and `processedAt` — but not the raw
 payload, to keep list responses compact.
 
-#### Event detail (`GET /api/webhooks/logs/{id}`)
+#### Event detail (`GET /api/admin/webhooks/logs/{id}`)
 
 ```bash
 curl -H "Authorization: Bearer $ADMIN_JWT" \
-  http://localhost:8082/api/webhooks/logs/42
+  http://localhost:8082/api/admin/webhooks/logs/42
 ```
 
 Returns everything in the list view plus the full `payload` as received, for troubleshooting a

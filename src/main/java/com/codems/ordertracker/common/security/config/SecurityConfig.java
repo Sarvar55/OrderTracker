@@ -20,8 +20,12 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+    private static final String ADMIN_ROLE = "ADMIN";
+
     @Qualifier("publicPaths")
     private final List<String> publicPaths;
+    @Qualifier("adminPaths")
+    private final List<String> adminPaths;
     private final CustomAccessDeniedHandler accessDeniedHandler;
     private final CustomAuthenticationEntryPoint authenticationEntryPoint;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -33,6 +37,7 @@ public class SecurityConfig {
                 .cors(cors -> {})
                 .authorizeHttpRequests(authorize -> {
                     publicPaths.forEach(path -> authorize.requestMatchers(path).permitAll());
+                    adminPaths.forEach(path -> authorize.requestMatchers(path).hasRole(ADMIN_ROLE));
                     authorize.anyRequest().authenticated();
                 })
                 .exceptionHandling(exceptions -> exceptions
