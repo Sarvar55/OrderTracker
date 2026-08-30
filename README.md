@@ -135,12 +135,12 @@ Every received webhook event is queryable through an admin-only audit API, backe
 
 | Method | Path | Description |
 | --- | --- | --- |
-| `GET` | `/api/webhooks/logs` | Paginated, filterable list of webhook events |
-| `GET` | `/api/webhooks/logs/{id}` | Full detail of a single event, including the raw payload |
+| `GET` | `/api/admin/webhooks/logs` | Paginated, filterable list of webhook events |
+| `GET` | `/api/admin/webhooks/logs/{id}` | Full detail of a single event, including the raw payload |
 
 Both endpoints require a JWT with the `ADMIN` role.
 
-#### List filters (`GET /api/webhooks/logs`)
+#### List filters (`GET /api/admin/webhooks/logs`)
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -152,18 +152,18 @@ Both endpoints require a JWT with the `ADMIN` role.
 
 ```bash
 curl -H "Authorization: Bearer $ADMIN_JWT" \
-  "http://localhost:8082/api/webhooks/logs?channel=PAYMENT&status=FAILED&from=2026-08-01T00:00:00"
+  "http://localhost:8082/api/admin/webhooks/logs?channel=PAYMENT&status=FAILED&from=2026-08-01T00:00:00"
 ```
 
 Response entries include `channel`, `eventType`, `providerEventId`, `orderNumber`,
 `signatureValid`, `status`, `errorMessage`, `receivedAt`, and `processedAt` — but not the raw
 payload, to keep list responses compact.
 
-#### Event detail (`GET /api/webhooks/logs/{id}`)
+#### Event detail (`GET /api/admin/webhooks/logs/{id}`)
 
 ```bash
 curl -H "Authorization: Bearer $ADMIN_JWT" \
-  http://localhost:8082/api/webhooks/logs/42
+  http://localhost:8082/api/admin/webhooks/logs/42
 ```
 
 Returns everything in the list view plus the full `payload` as received, for troubleshooting a
