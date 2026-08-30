@@ -20,4 +20,11 @@ public class SecurityPaths {
                 "/swagger-ui.html"
         );
     }
+
+    @Bean("adminPaths")
+    public List<String> adminPaths() {
+        return List.of(
+                ApplicationConstants.API_PREFIX + "/admin/**"
+        );
+    }
 }
