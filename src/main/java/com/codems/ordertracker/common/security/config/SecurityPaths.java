@@ -1,10 +1,9 @@
 package com.codems.ordertracker.common.security.config;
 
-
+import com.codems.ordertracker.common.constants.ApplicationConstants;
+import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import java.util.List;
 
 @Configuration
 public class SecurityPaths {
@@ -12,10 +11,10 @@ public class SecurityPaths {
     @Bean("publicPaths")
     public List<String> publicPaths() {
         return List.of(
-                "/api/auth/register",
-                "/api/auth/login",
-                "/api/webhooks/payment",
-                "/api/webhooks/shipment",
+                ApplicationConstants.API_PREFIX + "/auth/register",
+                ApplicationConstants.API_PREFIX + "/auth/login",
+                ApplicationConstants.API_PREFIX + "/webhooks/payment",
+                ApplicationConstants.API_PREFIX + "/webhooks/shipment",
                 "/swagger-ui/**",
                 "/v3/api-docs/**",
                 "/swagger-ui.html"
