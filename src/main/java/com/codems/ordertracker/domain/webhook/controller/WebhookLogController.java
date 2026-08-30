@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/webhooks/logs")
+@RequestMapping("/admin/webhooks/logs")
 @RequiredArgsConstructor
 @Tag(name = "Webhook Logs", description = "Admin endpoints to inspect webhook event history")
 public class WebhookLogController {
