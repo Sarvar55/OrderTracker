@@ -24,8 +24,7 @@ public class SecurityPaths {
     @Bean("adminPaths")
     public List<String> adminPaths() {
         return List.of(
-                ApplicationConstants.API_PREFIX + "/admin/**",
-                ApplicationConstants.API_PREFIX + "/webhooks/logs/**"
+                ApplicationConstants.API_PREFIX + "/admin/**"
         );
     }
 }
